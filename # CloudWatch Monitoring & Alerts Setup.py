@@ -1,0 +1,49 @@
+# CloudWatch Monitoring & Alerts Setup
+# pip install boto3
+
+import boto3
+
+AWS_REGION = "ap-south-1"
+INSTANCE_ID = "i-xxxxxxxx"
+
+cloudwatch = boto3.client('cloudwatch', region_name=AWS_REGION)
+
+def create_dashboard():
+    dashboard_body = """
+    {
+      "widgets": [{
+          "type":"metric",
+          "x":0,"y":0,"width":12,"height":6,
+          "properties":{
+             "metrics":[["AWS/EC2","CPUUtilization","InstanceId","%s"]],
+             "period":300,
+             "stat":"Average",
+             "region":"%s",
+             "title":"EC2 CPU"
+          }
+      }]
+    }
+    """ % (INSTANCE_ID, AWS_REGION)
+
+    cloudwatch.put_dashboard(
+        DashboardName="NidhiDashboard",
+        DashboardBody=dashboard_body
+    )
+    print("Dashboard created")
+
+def create_alarm():
+    cloudwatch.put_metric_alarm(
+        AlarmName="CPU_80_Alert",
+        MetricName="CPUUtilization",
+        Namespace="AWS/EC2",
+        Statistic="Average",
+        Period=300,
+        EvaluationPeriods=1,
+        Threshold=80.0,
+        ComparisonOperator="GreaterThanThreshold",
+        Dimensions=[{'Name':'InstanceId','Value':INSTANCE_ID}]
+    )
+    print("Alarm configured")
+
+create_dashboard()
+create_alarm()
